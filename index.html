@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeuraBlood - AI Blood Disease Prediction</title>
+    <style>
+        body {
+            background-image: url('/static/bg.jpg'); 
+            background-size: cover;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            color: white;
+        }
+        
+        /* Popup Styling */
+        .popup {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            padding: 30px;
+            border-radius: 25px;
+            box-shadow: 4px 4px 15px rgba(255, 255, 255, 0.6);
+            width: 40%; /* Bigger Popup */
+            max-width: 500px;
+            text-align: center;
+            transition: all 0.3s ease-in-out;
+        }
+
+        /* Input Field */
+        input {
+            width: 85%;
+            padding: 12px;
+            margin: 15px 0;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            text-align: center;
+            outline: none;
+        }
+
+        /* Button Styling */
+        button {
+            padding: 15px 25px;
+            font-size: 18px;
+            background: red;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 10px;
+            transition: 0.2s;
+        }
+
+        /* Hover Effect */
+        button:hover {
+            background: darkred;
+            transform: scale(1.05);
+        }
+
+        /* Start Button - Bigger */
+        .start-btn {
+            font-size: 22px;
+            padding: 18px 30px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🩺 NeuraBlood - AI Blood Disease Prediction</h1>
+
+    <!-- Popup for entering values -->
+    <div id="popup-container" class="popup">
+        <h2 id="param-title">Parameter</h2>
+        <input type="number" step="any" id="param-input" placeholder="Enter value">
+        <button onclick="nextParam()">Next</button>
+    </div>
+
+    <!-- Start Button -->
+    <button class="start-btn" onclick="startProcess()">Start</button>
+
+    <!-- Result Section -->
+    <div id="result" class="popup" style="display: none;">
+        <h2 id="disease"></h2>
+        <p id="recommendations"></p>
+    </div>
+
+    <script>
+        // List of Parameters
+        const parameters = [
+            "Glucose", "Cholesterol", "Hemoglobin", "Platelets", "White Blood Cells",
+            "Red Blood Cells", "Hematocrit", "Mean Corpuscular Volume",
+            "Mean Corpuscular Hemoglobin", "Mean Corpuscular Hemoglobin Concentration",
+            "Insulin", "BMI", "Systolic Blood Pressure", "Diastolic Blood Pressure",
+            "Triglycerides", "HbA1c", "LDL Cholesterol", "HDL Cholesterol", "ALT",
+            "AST", "Heart Rate", "Creatinine", "Troponin", "C-reactive Protein"
+        ];
+
+        let currentIndex = 0;
+        let values = {};
+
+        function startProcess() {
+            currentIndex = 0; // Reset index
+            values = {}; // Reset stored values
+            document.getElementById("popup-container").style.display = "block";
+            showParam();
+        }
+
+        function showParam() {
+            if (currentIndex < parameters.length) {
+                document.getElementById("param-title").innerText = parameters[currentIndex];
+                document.getElementById("param-input").value = "";
+                document.getElementById("param-input").focus();
+            }
+        }
+
+        function nextParam() {
+            let inputValue = document.getElementById("param-input").value.trim();
+            if (inputValue === "" || isNaN(inputValue)) {
+                alert("Please enter a valid numeric value!");
+                return;
+            }
+            
+            values[parameters[currentIndex]] = parseFloat(inputValue);
+            currentIndex++;
+            
+            if (currentIndex < parameters.length) {
+                showParam();
+            } else {
+                document.getElementById("popup-container").style.display = "none";
+                predictDisease();
+            }
+        }
+
+        // Allow pressing Enter key to go to the next parameter
+        document.getElementById("param-input").addEventListener("keypress", function(event) {
+            if (event.key === "Enter") {
+                nextParam();
+            }
+        });
+
+        function predictDisease() {
+    fetch("/predict", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(values)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert("Error: " + data.error);
+            return;
+        }
+        document.getElementById("disease").innerText = "Predicted Disease: " + (data.predicted_disease || "N/A");
+        document.getElementById("recommendations").innerText = data.recommendation || "Consult a doctor for details.";
+        document.getElementById("result").style.display = "block";
+    })
+    .catch(error => console.error("Error:", error));
+}
+    </script>
+</body>
+</html>
